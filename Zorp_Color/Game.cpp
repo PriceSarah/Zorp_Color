@@ -64,6 +64,7 @@ void Game::update()
 		return;
 	}
 
+	//
 	if (m_player.executeCommand(command))
 	{
 		return;
