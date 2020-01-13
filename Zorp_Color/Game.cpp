@@ -1,3 +1,4 @@
+
 #include "pch.h"
 #include "Game.h"
 #include <iostream>
@@ -6,9 +7,9 @@
 #include <time.h>
 
 
-Game::Game()
+Game::Game() : m_gameOver{ false }
 {
-	m_gameOver = false;
+
 }
 
 
@@ -56,11 +57,19 @@ void Game::update()
 		return;
 	}
 	int command = getCommand();
-	if (m_player.executeCommand(command)) {
+	
+	if (command == QUIT)
+	{
+		m_gameOver = true;
+		return;
+	}
 
+	if (m_player.executeCommand(command))
+	{
+		return;
 	}
 	else {
-		m_map[playerPos.y][playerPos.x].executeCommand(command);
+		m_map[playerPos.y][playerPos.x].executeCommand(command, &m_player);
 	}
 }
 
@@ -101,7 +110,11 @@ void Game::initializeMap()
 		for (int x = 0; x < MAZE_WIDTH; x++) {
 			int type = rand() % (MAX_RANDOM_TYPE * 2);
 			if (type < MAX_RANDOM_TYPE)
+			{
+				if (type == TREASURE)
+					type = rand() % 3 + TREASURE_HP;
 				m_map[y][x].setType(type);
+			}
 			else
 				m_map[y][x].setType(EMPTY);
 			m_map[y][x].setPosition(Point2D{ x, y });
@@ -153,17 +166,31 @@ void Game::drawValidDirections()
 int Game::getCommand()
 { // for now, we can't read commands longer than 50 characters 
 	char input[50] = "\0";
+
 	// jump to the correct location 
 	std::cout << CSI << PLAYER_INPUT_Y << ";" << 0 << "H";
+
 	// clear any existing text 
-	std::cout << CSI << "4M"; std::cout << INDENT << "Enter a command.";
+	std::cout << CSI << "4M";
+
+	//insert 4 blank lines to ensure the inventory output remains correct
+	std::cout << CSI << "4L";
+
+	std::cout << INDENT << "Enter a command.";
+
 	// move cursor to position for player to enter input
 	std::cout << CSI << PLAYER_INPUT_Y << ";" << PLAYER_INPUT_X << "H" << YELLOW;
+
 	// clear the input buffer, ready for player input
 	std::cin.clear();
 	std::cin.ignore(std::cin.rdbuf()->in_avail());
-	std::cin >> input; std::cout << RESET_COLOR;
+
+	std::cin >> input; 
+	std::cout << RESET_COLOR;
+
+
 	bool bMove = false;
+	bool bPickup = false;
 	while (input) {
 		if (strcmp(input, "move") == 0) {
 			bMove = true;
@@ -186,7 +213,16 @@ int Game::getCommand()
 		if (strcmp(input, "fight") == 0) {
 			return FIGHT;
 		}
-
+		if (strcmp(input, "exit") == 0) {
+			return QUIT;
+		}
+		if (strcmp(input, "pick") == 0) {
+			bPickup = true;
+		}
+		else if (bPickup == true) {
+			if (strcmp(input, "up") == 0)
+				return PICKUP;
+		}
 		char next = std::cin.peek();
 		if (next == '\n' || next == EOF)
 			break;
