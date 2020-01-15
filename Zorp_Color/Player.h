@@ -2,6 +2,8 @@
 #include "Point2D.h"
 #include <vector>
 
+class Room;
+class Enemy;
 class Powerup;
 
 class Player
@@ -12,13 +14,16 @@ public:
 	~Player();
 
 	void addPowerup(Powerup* pPowerup);
-
-	void setPosition(Point2D position);
+	void setPosition(const Point2D& position);
 	Point2D getPosition();
 
 	void draw();
 
-	bool executeCommand(int command);
+	void executeCommand(int command, Room* room);
+
+private:
+	void pickup(Room* room);
+	void attack(Enemy* enemy);
 
 private:
 	Point2D m_mapPosition;

@@ -4,7 +4,9 @@
 #include "Powerup.h"
 #include <iostream>
 #include <algorithm>
-
+#include "Room.h"
+#include "Enemy.h"
+#include "Food.h"
 
 Player::Player() : m_mapPosition{ 0, 0 },m_healthPoints{ 100 },m_attackPoints{ 20 },m_defensePoints{ 20 }
 {
@@ -24,7 +26,14 @@ Player::~Player()
 	m_powerups.clear();
 }
 
-void Player::setPosition(Point2D position) {
+void Player::addPowerup(Powerup* pPowerup)
+{
+	m_powerups.push_back(pPowerup);
+
+	std::sort(m_powerups.begin(), m_powerups.end(), Powerup::compare);
+}
+
+void Player::setPosition(const Point2D& position) {
 	m_mapPosition = position;
 }
 
@@ -47,75 +56,104 @@ void Player::draw() {
 	}
 }
 
-bool Player::executeCommand(int command) {
+void Player::executeCommand(int command, Room* pRoom) {
 	switch (command) {
 	case EAST:
 		if (m_mapPosition.x < MAZE_WIDTH - 1)
 			m_mapPosition.x++;
-		return true;
+		return;
 		break;
 	case WEST:
 		if (m_mapPosition.x > 0)
 			m_mapPosition.x--;
-		return true;
+		return;
 		break;
 	case NORTH:
 		if (m_mapPosition.y > 0)
 			m_mapPosition.y--;
-		return true;
+		return;
 		break;
 	case SOUTH:
 		if (m_mapPosition.y < MAZE_HEIGHT - 1)
 			m_mapPosition.y++;
-		return true;
+		return;
+		break;
+	case LOOK:
+		if (pRoom->getEnemy() != nullptr) {
+			std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "LOOK OUT! An enemy is approaching." << std::endl;
+		}
+		else if (pRoom->getPowerup() != nullptr) {
+			std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "There is some treasure here. It looks small enough to pick up." << std::endl;
+		}
+		else if (pRoom->getFood() != nullptr) {
+			std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "There is some food here. It seems like it should be edible." << std::endl;
+		}
+		else {
+			std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "You look around and see nothing worth mentioning." << std::endl;
+		}
+		break;
+	case FIGHT:
+		attack(pRoom->getEnemy());
+		break;
+	case PICKUP:
+		pickup(pRoom);
+		break;
+	default:
+		std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "You try but you just can't" << std::endl;
 		break;
 	}
-	return false;
+	std::cout << INDENT << "Press 'Enter' to Continue.";
+	std::cin.clear();
+	std::cin.ignore(std::cin.rdbuf()->in_avail());
+	std::cin.get();
+
+	return;
 }
 
-//bool Player::pickup(Room* room)
-//{
-//	static const char descriptors[15][30] = {
-//		"Indifference", "Invisibility", "Invulnerability",
-//		"Incontinence", "Improbability", "Impatience",
-//		"Indecision", "Inspiration", "Independence",
-//		"Incurability", "Integration", "Invocation",
-//		"Inferno", "Indigestion", "Inoculation"
-//	};
-//	int item = rand() % 15;
-//
-//	char name[30];
-//	//strcpy_s(name, 30, itemNames[item]);
-//
-//	switch (room->getType()) {
-//	case TREASURE_HP:
-//		strcpy_s(name, "Potion of ");
-//		break;
-//	case TREASURE_AT:
-//		strcpy_s(name, "Sword of ");
-//		break;
-//	case TREASURE_DF:
-//		strcpy_s(name, "Shield of ");
-//		break;
-//	default:
-//		return false;
-//	}
-//	strncat_s(name, descriptors[item], 30);
-//
-//
-//	m_powerups.push_back(Powerup(name, 1, 1, 1));
-//	std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "You pick up the " << name << "." << std::endl;
-//
-//	std::sort(m_powerups.begin(), m_powerups.end(), Powerup::compare);
-//	//set room to empty
-//	room->setType(EMPTY);
-//
-//	std::cout << INDENT << "Press 'Enter' to continue.";
-//	std::cin.clear();
-//	std::cin.ignore(std::cin.rdbuf()->in_avail());
-//	std::cin.clear();
-//	std::cin.ignore(std::cin.rdbuf()->in_avail());
-//	std::cin.get();
-//	return true;
-//
-//}
+void Player::pickup(Room* pRoom)
+{
+	if (pRoom->getPowerup() != nullptr) {
+		std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "You pick up the " <<
+			pRoom->getPowerup()->getName() << std::endl;
+
+		addPowerup(pRoom->getPowerup());
+
+		pRoom->setPowerup(nullptr);
+	}
+	else if (pRoom->getFood() != nullptr) {
+
+		m_healthPoints += pRoom->getFood()->getHP();
+		std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "You feel refreshed. Your health is now " << m_healthPoints << std::endl;
+		pRoom->setFood(nullptr);
+	}
+	else {
+		std::cout << EXTRA_OUTPUT_POS << RESET_COLOR << "There is nothing to pick up" << std::endl;
+	}
+
+}
+
+void Player::attack(Enemy* pEnemy)
+{
+	if (pEnemy == nullptr) {
+		std::cout << EXTRA_OUTPUT_POS << RESET_COLOR <<
+			"There is no one here you can fight." << std::endl;
+	}
+	else {
+		pEnemy->onAttacked(m_attackPoints);
+
+		if (pEnemy->isAlive() == false) {
+			std::cout << EXTRA_OUTPUT_POS << RESET_COLOR <<
+			"You fight a grue and kill it." << std::endl;
+		}
+		else {
+			int damage = pEnemy->getAT() - m_defensePoints;
+			if (damage < 0) damage = 0;
+			m_healthPoints -= damage;
+
+			std::cout << EXTRA_OUTPUT_POS << RESET_COLOR <<
+				"You fight a grue and take " << damage <<
+				" points of damage. Your health is now " << m_healthPoints << std::endl;
+			std::cout << INDENT << "The grue has " << pEnemy->getHP() << " health remaining." << std::endl;
+		}	
+	}
+}
