@@ -318,6 +318,13 @@ int Game::getCommand()
 			return SAVE;
 
 		}
+		if (strcmp(input, "load") == 0) {
+			if (!load()) {
+				// could not open the file, display an error message
+				std::cout << EXTRA_OUTPUT_POS << RED << "Failed to load zorpsave.dat." << std::endl;
+			}
+			return LOAD;
+		}
 		char next = std::cin.peek();
 		if (next == '\n' || next == EOF)
 			break;
@@ -332,7 +339,7 @@ void Game::save()
 	std::ofstream out;
 
 	//open the file for output, and truncate (any contents that existed in the file before it is open are discarded)
-	out.open("zorp_savegame.txt", std::ofstream::out | std::ofstream::trunc);
+	out.open("zorp_savegame.dat", std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
 
 	if (out.is_open()) {
 		//save the position of every game object, and the players stats
@@ -347,17 +354,17 @@ void Game::save()
 			// output the powerups first, as these will need to be loaded before 
 			// we load any characters (so we can correctly copy the powerup pointers 
 			// to the characters' powerup list)
-			out << m_powerupCount << std::endl;
+			out.write((char*)&m_powerupCount, sizeof(int));
 			for (int i = 0; i < m_powerupCount; i++) {
 				m_powerups[i].save(out);
 			}
 
-			out << m_enemyCount << std::endl;
+			out.write((char*)&m_enemyCount, sizeof(int));
 			for (int i = 0; i < m_enemyCount; i++) {
 				m_enemies[i].save(out);
 			}
 
-			out << m_foodCount << std::endl;
+			out.write((char*)&m_foodCount, sizeof(int));
 			for (int i = 0; i < m_foodCount; i++) {
 				m_food[i].save(out);
 			}
@@ -378,7 +385,7 @@ void Game::save()
 bool Game::load()
 {
 	std::ifstream in;
-	in.open("zorp_savegame.txt", std::ifstream::in);
+	in.open("zorp_savegame.dat", std::ifstream::in | std::ifstream::binary);
 
 	if (!in.is_open()) 
 	{ 
@@ -391,8 +398,7 @@ bool Game::load()
 	if (m_tempPowerups != nullptr)
 		delete[] m_tempPowerups; 
 	
-	in.getline(buffer, 50); 
-	m_tempPowerupCount = std::stoi(buffer);
+	in.read((char*)&m_tempPowerupCount, sizeof(int));
 	if (in.rdstate() || m_tempPowerupCount < 0)
 		return false;
 	
@@ -408,10 +414,11 @@ bool Game::load()
 	} 
 	
 	// load all the enemies 
-	in.getline(buffer, 50);
-	int enemyCount = std::stoi(buffer); 
+	int enemyCount;
+	in.read((char*)&enemyCount, sizeof(int));
 	if (in.rdstate() || enemyCount < 0)
 		return false; 
+
 	Enemy* enemies = new Enemy[enemyCount];
 	for (int i = 0; i < enemyCount; i++)
 	{ 
@@ -424,10 +431,11 @@ bool Game::load()
 		} 
 	} 
 	// load all the food 
-	in.getline(buffer, 50);
-	int foodCount = std::stoi(buffer); 
+	int foodCount;
+	in.read((char*)&foodCount, sizeof(int));
 	if (in.rdstate() || foodCount < 0) 
 		return false;
+
 	Food* foods = new Food[foodCount]; 
 	for (int i = 0; i < foodCount; i++) 
 	{

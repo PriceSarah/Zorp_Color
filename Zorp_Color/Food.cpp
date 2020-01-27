@@ -34,10 +34,14 @@ void Food::save(std::ofstream& out)
 	if (!out.is_open())
 		return;
 
-	out << m_priority << ",";
+	/*out << m_priority << ",";
 	out << m_mapPosition.x << ",";
 	out << m_mapPosition.y << ",";
-	out << m_hitPoints << ",";
+	out << m_hitPoints << ",";*/
+
+	out.write((char*)&m_priority, sizeof(int));
+	out.write((char*)&m_mapPosition, sizeof(Point2D));
+	out.write((char*)&m_hitPoints, sizeof(int));
 }
 
 bool Food::load(std::ifstream & in, const Game * game)
@@ -48,27 +52,13 @@ bool Food::load(std::ifstream & in, const Game * game)
 	char buffer[50] = { 0 };
 
 	//load prioity
-	in.ignore(1);
-	in.get(buffer, 50, ',');
-	if (in.rdstate() || buffer[0] == 0)
-		return false;
-	m_priority = std::stoi(buffer);
+	in.read((char*)&m_priority, sizeof(int));
+	if (in.rdstate()) return false;
 
-	in.ignore(1);
-	in.get(buffer, 50, ',');
-	if (in.rdstate() || buffer[0] == 0)
-		return false;
-	m_mapPosition.x = std::stoi(buffer);
+	in.read((char*)&m_mapPosition, sizeof(Point2D));
+	if (in.rdstate()) return false;
 
-	in.ignore(1);
-	in.get(buffer, 50, ',');
-	if (in.rdstate() || buffer[0] == 0)
-		return false;
-	m_mapPosition.y = std::stoi(buffer);
-
-	in.ignore(1);
-	in.get(buffer, 50, ',');
-	if (in.rdstate() || buffer[0] == 0)
-		return false;
+	in.read((char*)&m_hitPoints, sizeof(int));
+	if (in.rdstate()) return false;
 }
 
