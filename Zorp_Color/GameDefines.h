@@ -20,6 +20,12 @@ const int EMPTY = 0;
 const int ENTRANCE = EMPTY + 1; 
 const int EXIT = ENTRANCE + 1; 
 
+const int PRIORITY_DEFAULT = 5;
+const int PRIORITY_PLAYER = 0;
+const int PRIORITY_ENEMY = 1;
+const int PRIORITY_POWERUP = 2;
+const int PRIORITY_FOOD = 3;
+
 const int MAZE_WIDTH = 10; 
 const int MAZE_HEIGHT = 6; 
 const int INDENT_X = 5; 
@@ -38,6 +44,8 @@ const int LOOK = 9;
 const int FIGHT = 10;
 const int PICKUP = 11;
 const int QUIT = 12;
+const int SAVE = 13;
+const int LOAD = 14;
 
 static const char descriptors[15][30] = {
 		"Indifference", "Invisibility", "Invulnerability",

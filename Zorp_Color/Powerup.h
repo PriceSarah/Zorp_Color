@@ -1,8 +1,8 @@
 #pragma once
-#include <cstring>
+#include "GameObject.h"
 
 
-class Powerup
+class Powerup : public GameObject
 {
 public:
 	Powerup();
@@ -20,6 +20,12 @@ public:
 	float getDefenseMultiplier();
 
 	static bool compare(const Powerup* p1, const Powerup* p2);
+
+	void draw();
+	void drawDescription();
+	void lookAt();
+	void save(std::ofstream& out);
+	bool load(std::ifstream& in, const Game* game);
 
 private:
 	char m_name[30];
